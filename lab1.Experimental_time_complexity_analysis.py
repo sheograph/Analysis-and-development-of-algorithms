@@ -2,7 +2,8 @@ import numpy as np
 import datetime
 import time
 import matplotlib.pyplot as plt
-import scipy as sp
+import random
+from scipy.optimize import curve_fit
 
 
 # f(v)=const
@@ -105,157 +106,117 @@ def Polynom_Horner(N, runs, x):
     return ts4
 
 
-# bubble_sort
-ts5 = np.array([])
-prod_arr5 = 1
-time_stamp_5 = np.array([datetime.datetime.now().timestamp()])
+def Bubble_Sort(N, runs):
+    def bubblesort(l):
+        last_element = len(l) - 1
+        for x in range(0, last_element):
+            for y in range(0, last_element):
+                if l[y] > l[y + 1]:
+                    l[y], l[y + 1] = l[y + 1], l[y]
+        return l
+    ts5 = np.zeros(N)
+    for i in range(0, runs):
+        ts5_ = np.array([])
+        time_stamp_5 = np.array([datetime.datetime.now().timestamp()])
+        for k in range(1, N + 1):
+            arr5 = np.random.sample(k)
+            arr5 = bubblesort(arr5)
+            time_stamp_5 = np.append(time_stamp_5, datetime.datetime.now().timestamp())
+            ts5_ = np.append(ts5_, time_stamp_5[k] - time_stamp_5[k - 1])
+        ts5 = ts5 + ts5_
+    ts5 = ts5 / runs
+    return ts5
 
 
-def bubble_sort(arr):
-    def swap(i, j):
-        arr[i], arr[j] = arr[j], arr[i]
-
-    n = len(arr)
-    swapped = True
-
-    x = -1
-    while swapped:
-        swapped = False
-        x = x + 1
-        for i in range(1, n - x):
-            if arr[i - 1] > arr[i]:
-                swap(i - 1, i)
-                swapped = True
-
-
-# quick_sort
-def partition(array, begin, end):
-    pivot_idx = begin
-    for i in xrange(begin + 1, end + 1):
-        if array[i] <= array[begin]:
-            pivot_idx += 1
-            array[i], array[pivot_idx] = array[pivot_idx], array[i]
-    array[pivot_idx], array[begin] = array[begin], array[pivot_idx]
-    return pivot_idx
+def Quick_Sort(N, runs):
+    def quicksort(l1):
+        if len(l1) > 1:
+            x = l1[random.randint(0, len(l1) - 1)]
+            low = [u for u in l1 if u < x]
+            eq = [u for u in l1 if u == x]
+            high = [u for u in l1 if u > x]
+            l1 = quicksort(low) + eq + quicksort(high)
+        return l1
+    ts6 = np.zeros(N)
+    for i in range(0,runs):
+        ts6_ = np.array([])
+        time_stamp_6 = np.array([datetime.datetime.now().timestamp()])
+        for k in range(1, N + 1):
+            arr6 = np.random.sample(k)
+            arr6 = quicksort(arr6)
+            time_stamp_6 = np.append(time_stamp_6, datetime.datetime.now().timestamp())
+            ts6_ = np.append(ts6_, time_stamp_6[k] - time_stamp_6[k - 1])
+        ts6 = ts6 + ts6_
+    ts6 = ts6 / runs
+    return ts6
 
 
-def quick_sort_recursion(array, begin, end):
-    if begin >= end:
-        return
-    pivot_idx = partition(array, begin, end)
-    quick_sort_recursion(array, begin, pivot_idx - 1)
-    quick_sort_recursion(array, pivot_idx + 1, end)
+def Tim_Sort(N, runs):
+    minrun = 32
 
+    def InsSort(arr, start, end):
+        for i in range(start + 1, end + 1):
+            elem = arr[i]
+            j = i - 1
+            while j >= start and elem < arr[j]:
+                arr[j + 1] = arr[j]
+                j -= 1
+            arr[j + 1] = elem
+        return arr
 
-def quick_sort(array, begin=0, end=None):
-    if end is None:
-        end = len(array) - 1
+    def Merge(arr, start, mid, end):
+        if mid == end:
+            return arr
+        first = arr[start:mid + 1]
+        last = arr[mid + 1:end + 1]
+        len1 = mid - start + 1
+        len2 = end - mid
+        ind1 = 0
+        ind2 = 0
+        ind = start
+        while ind1 < len1 and ind2 < len2:
+            if first[ind1] < last[ind2]:
+                arr[ind] = first[ind1]
+                ind1 += 1
+            else:
+                arr[ind] = last[ind2]
+                ind2 += 1
+            ind += 1
+        while ind1 < len1:
+            arr[ind] = first[ind1]
+            ind1 += 1
+            ind += 1
+        while ind2 < len2:
+            arr[ind] = last[ind2]
+            ind2 += 1
+            ind += 1
+        return arr
 
-    return quick_sort_recursion(array, begin, end)
+    def Tim_run(arr):
+        n = len(arr)
+        for start in range(0, n, minrun):
+            end = min(start + minrun - 1, n - 1)
+            arr = InsSort(arr, start, end)
+        curr_size = minrun
+        while curr_size < n:
+            for start in range(0, n, curr_size * 2):
+                mid = min(n - 1, start + curr_size - 1)
+                end = min(n - 1, mid + curr_size)
+                arr = Merge(arr, start, mid, end)
+            curr_size *= 2
+        return arr
 
-
-# timsort
-MIN_MERGE = 32
-
-
-def calcMinRun(n):
-    """Returns the minimum length of a
-    run from 23 - 64 so that
-    the len(array)/minrun is less than or
-    equal to a power of 2.
-
-    e.g. 1=>1, ..., 63=>63, 64=>32, 65=>33,
-    ..., 127=>64, 128=>32, ...
-    """
-    r = 0
-    while n >= MIN_MERGE:
-        r |= n & 1
-        n >>= 1
-    return n + r
-
-
-# This function sorts array from left index to
-# to right index which is of size atmost RUN
-def insertionSort(arr, left, right):
-    for i in range(left + 1, right + 1):
-        j = i
-        while j > left and arr[j] < arr[j - 1]:
-            arr[j], arr[j - 1] = arr[j - 1], arr[j]
-            j -= 1
-
-
-# Merge function merges the sorted runs
-def merge(arr, l, m, r):
-    # original array is broken in two parts
-    # left and right array
-    len1, len2 = m - l + 1, r - m
-    left, right = [], []
-    for i in range(0, len1):
-        left.append(arr[l + i])
-    for i in range(0, len2):
-        right.append(arr[m + 1 + i])
-
-    i, j, k = 0, 0, l
-
-    # after comparing, we merge those two array
-    # in larger sub array
-    while i < len1 and j < len2:
-        if left[i] <= right[j]:
-            arr[k] = left[i]
-            i += 1
-
-        else:
-            arr[k] = right[j]
-            j += 1
-
-        k += 1
-
-    # Copy remaining elements of left, if any
-    while i < len1:
-        arr[k] = left[i]
-        k += 1
-        i += 1
-
-    # Copy remaining element of right, if any
-    while j < len2:
-        arr[k] = right[j]
-        k += 1
-        j += 1
-
-
-# Iterative Timsort function to sort the
-# array[0...n-1] (similar to merge sort)
-def timSort(arr):
-    n = len(arr)
-    minRun = calcMinRun(n)
-
-    # Sort individual subarrays of size RUN
-    for start in range(0, n, minRun):
-        end = min(start + minRun - 1, n - 1)
-        insertionSort(arr, start, end)
-
-    # Start merging from size RUN (or 32). It will merge
-    # to form size 64, then 128, 256 and so on ....
-    size = minRun
-    while size < n:
-
-        # Pick starting point of left sub array. We
-        # are going to merge arr[left..left+size-1]
-        # and arr[left+size, left+2*size-1]
-        # After every merge, we increase left by 2*size
-        for left in range(0, n, 2 * size):
-
-            # Find ending point of left sub array
-            # mid+1 is starting point of right sub array
-            mid = min(n - 1, left + size - 1)
-            right = min((left + 2 * size - 1), (n - 1))
-
-            # Merge sub array arr[left.....mid] &
-            # arr[mid+1....right]
-            if mid < right:
-                merge(arr, left, mid, right)
-
-        size = 2 * size
+    ts7 = np.zeros(N)
+    for i in range(0, runs):
+        ts7_ = np.array([])
+        time_stamp_7 = np.array([datetime.datetime.now().timestamp()])
+        for k in range(1, N + 1):
+            arr7 = Tim_run(np.random.sample(k))
+            time_stamp_7 = np.append(time_stamp_7, datetime.datetime.now().timestamp())
+            ts7_ = np.append(ts7_, time_stamp_7[k] - time_stamp_7[k - 1])
+        ts7 += ts7_
+    ts7 = ts7 / runs
+    return ts7
 
 
 def Matrix_Prod(N, runs):
@@ -281,65 +242,72 @@ def Matrix_Prod(N, runs):
     return ts
 
 
-def plot_LSM(N, n, ts, str, d):  # Least Squares Method for linear func
-    mx = n.sum() / N
-    my = ts.sum() / N
-    a2 = np.dot(n.T, n) / N
-    a11 = np.dot(n.T, ts) / N
-
-    kk = (a11 - mx * my) / (a2 - mx ** 2)
-    bb = my - kk * mx
-    ff = np.array([kk * z + bb for z in range(N)])
-
-    fig, ax = plt.subplots()
-    ax.set_xlabel('Vector dimension v')
-    ax.set_ylabel('Time(seconds)')
-    fig.suptitle(str)
-    plt.plot(n, ts, label='Experimental value')
-    plt.plot(ff, label='Theoretical value')
-    ax.legend()
-    plt.grid(True)
-    plt.show()
+def O_1(x, c):
+    return [c] * len(x)
 
 
-def plot_advanced_LSM(N, n, ts, str, d):  # Least Squares Method for any integer degree
-    fx = np.linspace(n[0], n[-1] + 10, 1000)
-    fp, residuals, rank, sv, rcond = np.polyfit(n, ts, d, full=True)
-    f = sp.poly1d(fp)  # polynomial function
+def O_n(x, a, c):
+    return np.multiply(a, x) + c
+
+
+def O_nlogn(x, a, c):
+    logx = np.log2(x)
+    return np.multiply(a, np.array(x) * logx) + c
+
+
+def O_n2(x, a, c):
+    x2 = np.array([x[i] ** 2 for i in range(len(x))])
+    return a * x2 + c
+
+
+def O_n3(x, a, c):
+    x3 = np.array([x[i] ** 3 for i in range(len(x))])
+    return a * x3 + c
+
+
+def plot_LSM(N, n, ts, str, complexity):  # Least Squares Method for any integer degree
+    popt, pcov = curve_fit(complexity, n, ts)
     fig, ax = plt.subplots()
     ax.set_xlabel('Vector dimension v')
     ax.set_ylabel('Time(seconds)')
     plt.suptitle(str)
     plt.plot(n, ts, label='Experimental value')
-    plt.plot(fx, f(fx), label="Theoretical value O(n^%d)" % f.order)
+    c = "Theoretical value " + complexity.__name__
+    plt.plot(n, complexity(n, *popt), label=c)
     plt.legend()
     plt.grid()
-    plt.savefig(f'{str}.png', dpi=300)
+    plt.savefig(f'{str}.png')
     plt.show()
 
 
 N = 2000  # Vector dimension
 n = np.linspace(1, N, N)
 x = 1.5
-runs = 1  # Number of launches
+runs = 5  # Number of launches
 
-d = 0
 ts1 = Const(N, runs)
+plot_LSM(N, n, ts1, 'f(v)=CONST', O_1)
 ts2 = Sum(N, runs)
+plot_LSM(N, n, ts2, 'f(v)=SUM', O_n)
 ts3 = Prod(N, runs)
-plot_advanced_LSM(N, n, ts1, 'f(v)=CONST', d)
-plot_advanced_LSM(N, n, ts2, 'f(v)=SUM', d)
-plot_advanced_LSM(N, n, ts3, 'f(v)=PROD', d)
+plot_LSM(N, n, ts3, 'f(v)=PROD', O_n)
 
-d = 1
 ts4_1 = Polynom_Naive(N, runs, x)
+plot_LSM(N, n, ts4_1, 'Polynom Naive', O_n)
 ts4_2 = Polynom_Horner(N, runs, x)
-plot_advanced_LSM(N, n, ts4_1, 'Polynom Naive', d)
-plot_advanced_LSM(N, n, ts4_2, 'Polynom Horner', d)
+plot_LSM(N, n, ts4_2, 'Polynom Horner', O_n)
 
-
-N = 50
+N = 200
 n = np.linspace(1, N, N)
-d = 3
+ts5 = Bubble_Sort(N, runs)
+plot_LSM(N, n, ts5, 'Bubble Sort', O_n2)
+ts6 = Quick_Sort(N, runs)
+plot_LSM(N, n, ts6, 'Quick Sort', O_nlogn)
+ts7 = Tim_Sort(N, runs)
+plot_LSM(N, n, ts7, 'Tim Sort', O_nlogn)
+
+N = 100
+n = np.linspace(1, N, N)
 ts8 = Matrix_Prod(N, runs)
-plot_advanced_LSM(N, n, ts8, 'Matrix Product', d)
+plot_LSM(N, n, ts8, 'Matrix Product', O_n3)
+
