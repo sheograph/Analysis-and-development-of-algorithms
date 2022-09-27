@@ -1,8 +1,6 @@
 import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
 import scipy.optimize
-# matplotlib.use('TkAgg')
 from autograd import jacobian
 import random
 
