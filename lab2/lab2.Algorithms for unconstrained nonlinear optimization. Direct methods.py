@@ -186,5 +186,5 @@ x_k = np.array([k / N for k in range(N + 1)])
 y_k = np.array([alpha * x_k[k] + beta + noise[k] for k in range(len(x_k))])
 
 
-lab21_plot(eps)
+# lab21_plot(eps)
 lab22_plot(N, eps, alpha, beta, x_k, y_k)
