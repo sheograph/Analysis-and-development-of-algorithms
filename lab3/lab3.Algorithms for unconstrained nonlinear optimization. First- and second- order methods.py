@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.optimize
+from scipy.optimize import least_squares
 from autograd import jacobian
 import random
 
@@ -77,7 +78,7 @@ def rational_approximant(x, a, b):
     return a / (1 + b * x)
 
 
-def LSE_lin(*args):   # Least Squares Error
+def LSE_lin(*args):  # Least Squares Error
     try:
         a = args[0][0]
         b = args[0][1]
@@ -100,34 +101,36 @@ def LSE_rat(*args):
     return np.sum([(xdata[i] - y_k[i]) * (xdata[i] - y_k[i]) for i in range(len(y_k))])
 
 
-def Exhaustive_search(func):
-    a = np.linspace(0, 1, 101)
-    b = np.linspace(0, 1, 101)
+def Exhaustive_search(func, N):
+    a = np.linspace(0, 1, N + 1)
+    b = np.linspace(0, 1, N + 1)
     a_best, b_best = None, None
-    min_error = 10 ** 6
+    min_error = 10 ** 5
+    f_calc = 0
     for i in range(len(a)):
-        print(i)
         for j in range(len(b)):
             err = func(a[i], b[j])
+            f_calc += 1
             if err < min_error:
                 min_error = err
                 a_best = a[i]
                 b_best = b[j]
-    return a_best, b_best, min_error
+    return a_best, b_best, min_error, f_calc
 
 
-def Gauss(func, eps):
-    a = 1/2
-    b = 1/2
-    a_grid = np.linspace(0, 1, 101)
-    b_grid = np.linspace(0, 1, 101)
+def Gauss(func, a0, b0, N, eps):
+    a, b = a0, b0
+    a_grid = np.linspace(0, 1, N + 1)
+    b_grid = np.linspace(0, 1, N + 1)
     min_f = func(a, b)
     step = 1
-    while step > eps/2:
+    f_calc = 1
+    while step > eps / 2:
         a_best = a
         b_best = b
         for a_ in a_grid:
             err = func(a_, b)
+            f_calc += 1
             if err < min_f:
                 min_f = err
                 a_best = a_
@@ -135,26 +138,36 @@ def Gauss(func, eps):
         a = a_best
         for b_ in b_grid:
             err = func(a, b_)
+            f_calc += 1
             if err < min_f:
                 min_f = err
                 b_best = b_
         step = min(step, abs(b - b_best))
         b = b_best
-    return a, b, min_f
+    return a, b, min_f, f_calc
 
 
 def lab2_plot(func, approx, str, N, eps, alpha, beta, x_k, y_k):
-    # res1 = Exhaustive_search(func)
-    # res2 = Gauss(func, eps)
-    res1 = scipy.optimize.brute(func, ranges=(slice(0, 1, 1 / (N + 1)), (slice(0, 1, 1 / (N + 1)))))
+    # res1 = Exhaustive_search(func, N)
+    # res2 = Gauss(func, 0.5, 0.5, N, eps)
+    res1 = scipy.optimize.brute(func, ranges=(slice(0, 1, 1/(N+1)), (slice(0, 1, 1/(N+1)))))
     res2 = scipy.optimize.minimize(func, [0.5, 0.5], method='CG', tol=eps)
-    res3 = scipy.optimize.minimize(func, [0.5, 0.5], method='Nelder-Mead')
+    res3 = scipy.optimize.minimize(func, [0.5, 0.5], method='Nelder-Mead', tol=eps)
+
+    print(res1)
+    print(f'{str}\nExhaustive search:\na={round(res1[0], 5)}, b={round(res1[1], 5)}, '
+          f'f={round(func(res1[0],res1[1]), 5)}\niterations={(N+1)**2}\n')
+    print(f'Gauss:\na={round(res2.x[0], 5)}, b={round(res2.x[1], 5)}, '
+          f'f={round(res2.fun, 5)}\niterations={res2.nfev}\n')
+    # print(f'{str}\nExhaustive search:\na={round(res1[0],5)}, b={round(res1[1],5)}, f={round(res1[2],5)}\nf-calculations={res1[3]}\n')
+    # print(f'Gauss:\na={round(res2[0], 5)}, b={round(res2[1], 5)}, f={round(res2[2], 5)}\nf-calculations={res2[3]}\n')
+    print(f'Nelder-Mead:\na={round(res3.x[0],5)}, b={round(res3.x[1],5)}, '
+          f'f={round(res3.fun,5)}\niterations={res3.nfev}\n')
 
     plt.plot(x_k, y_k, 'o')
     plt.plot(x_k, [linear_approximant(x, alpha, beta) for x in x_k], label='Generating line')
     plt.plot(x_k, [approx(x, res1[0], res1[1]) for x in x_k], label='Exhaustive search')
     # plt.plot(x_k, [approx(x, res2[0], res2[1]) for x in x_k], label='Gauss')
-    plt.plot(x_k, [approx(x, res2.x[0], res2.x[1]) for x in x_k], label='Gauss')
     plt.plot(x_k, [approx(x, res3.x[0], res3.x[1]) for x in x_k], label='Nelder-Mead')
     plt.title(str)
     plt.legend()
@@ -166,19 +179,27 @@ def lab3_plot(func, approx, str, N, eps, alpha, beta, x_k, y_k):
     res1 = scipy.optimize.minimize(func, x0=[0.5, 0.5], method='BFGS', tol=eps)
     res2 = scipy.optimize.minimize(func, x0=[0.5, 0.5], method='CG', tol=eps)
     res3 = scipy.optimize.minimize(func, x0=[0.5, 0.5], method='Newton-CG', jac=jacobian(func), tol=eps)
-    res4 = scipy.optimize.curve_fit(approx, xdata=x_k, ydata=y_k, method='lm')[0]
-    print('Levenberg-Marquardt algorithm arguments: {:.6f}, {:.6f}'.format(res4[0], res4[1]))
+    # res4 = scipy.optimize.curve_fit(approx, xdata=x_k, ydata=y_k, method='lm')
+    print(res1)
+    print(res2)
+    print(res3)
+    # print('Levenberg-Marquardt algorithm arguments: {:.6f}, {:.6f}'.format(res4[0], res4[1]))
+
+    print('Gradient descent i =', res1.nfev)
+    print('Conjugate gradient descent i =', res2.nfev)
+    print('Newton i =', res3.nfev)
+    # print('Levenberg-Marquardt i =', res4)
 
     plt.plot(x_k, y_k, 'o')
     plt.plot(x_k, [linear_approximant(x, alpha, beta) for x in x_k], label='Generating line')
     plt.plot(x_k, [approx(x, res1.x[0], res1.x[1]) for x in x_k], label='Gradient descent')
     plt.plot(x_k, [approx(x, res2.x[0], res2.x[1]) for x in x_k], label='Conjugate gradient descent')
     plt.plot(x_k, [approx(x, res3.x[0], res3.x[1]) for x in x_k], label='Newton')
-    plt.plot(x_k, [approx(x, res4[0], res4[1]) for x in x_k], label='Levenberg-Marquardt')
+    # plt.plot(x_k, [approx(x, res4[0], res4[1]) for x in x_k], label='Levenberg-Marquardt')
     plt.title(str)
     plt.legend()
     plt.savefig(str + ' lab3')
-    plt.show()
+    # plt.show()
 
 
 N = 100
@@ -192,8 +213,5 @@ y_k = np.array([alpha * x_k[k] + beta + noise[k] for k in range(len(x_k))])
 lab2_plot(LSE_lin, linear_approximant, 'Linear approximation', N, eps, alpha, beta, x_k, y_k)
 lab2_plot(LSE_rat, rational_approximant, 'Rational approximation', N, eps, alpha, beta, x_k, y_k)
 
-lab3_plot(LSE_lin, linear_approximant, 'Linear approximation', N, eps, alpha, beta, x_k, y_k)
-lab3_plot(LSE_rat, rational_approximant, 'Rational approximation', N, eps, alpha, beta, x_k, y_k)
-
-
-
+# lab3_plot(LSE_lin, linear_approximant, 'Linear approximation', N, eps, alpha, beta, x_k, y_k)
+# lab3_plot(LSE_rat, rational_approximant, 'Rational approximation', N, eps, alpha, beta, x_k, y_k)
