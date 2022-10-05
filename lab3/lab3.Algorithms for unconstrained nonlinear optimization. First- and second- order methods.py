@@ -100,7 +100,7 @@ def LSE_rat(*args):
     return np.sum([(xdata[i] - y_k[i]) * (xdata[i] - y_k[i]) for i in range(len(y_k))])
 
 
-def LSE_lin_lm(*args):  # Least Squares Error
+def LSE_lin_lm(*args):
     a = args[0][0]
     b = args[0][1]
     xdata = [linear_approximant(x, a, b) for x in x_k]
@@ -134,7 +134,7 @@ def test_Exhaustive_search(func, N):
     return a_best, b_best, min_error, f_calc
 
 
-def test_Gauss(func, a0, b0, N, eps):
+def manual_Gauss(func, a0, b0, N, eps):
     a, b = a0, b0
     a_grid = np.linspace(0, 1, N + 1)
     b_grid = np.linspace(0, 1, N + 1)
@@ -166,12 +166,15 @@ def test_Gauss(func, a0, b0, N, eps):
 def lab2_plot(func, approx, str, N, eps, alpha, beta, x_k, y_k):
     res1 = scipy.optimize.brute(func, ranges=(slice(0, 1, 1/(N+1)), (slice(0, 1, 1/(N+1)))))
     res2 = scipy.optimize.minimize(func, [0.5, 0.5], method='CG', tol=eps)
+    # res22 = manual_Gauss(func, 0.5, 0.5, N, eps)
     res3 = scipy.optimize.minimize(func, [0.5, 0.5], method='Nelder-Mead', tol=eps)
 
     print(f'{str}\nExhaustive search:\na={round(res1[0], 5)}, b={round(res1[1], 5)}, '
           f'f={round(func(res1[0],res1[1]), 5)}\niterations={(N+1)**2}\n')
     print(f'Gauss:\na={round(res2.x[0], 5)}, b={round(res2.x[1], 5)}, '
           f'f={round(res2.fun, 5)}\niterations={res2.nfev}\n')
+    # print(f'Gauss:\na={round(res22[0], 5)}, b={round(res22[1], 5)}, '
+    #       f'f={round(res22[2], 5)}\niterations={res22[3]}\n')
     print(f'Nelder-Mead:\na={round(res3.x[0],5)}, b={round(res3.x[1],5)}, '
           f'f={round(res3.fun,5)}\niterations={res3.nfev}\n')
 
@@ -179,12 +182,12 @@ def lab2_plot(func, approx, str, N, eps, alpha, beta, x_k, y_k):
     plt.plot(x_k, [linear_approximant(x, alpha, beta) for x in x_k], label='Generating line')
     plt.plot(x_k, [approx(x, res1[0], res1[1]) for x in x_k], label='Exhaustive search')
     plt.plot(x_k, [approx(x, res2.x[0], res2.x[1]) for x in x_k], label='Gauss')
+    # plt.plot(x_k, [approx(x, res22[0], res22[1]) for x in x_k], label='Gauss')
     plt.plot(x_k, [approx(x, res3.x[0], res3.x[1]) for x in x_k], label='Nelder-Mead')
     plt.title(str)
     plt.legend()
     plt.savefig(str + ' lab2')
     plt.show()
-
 
 
 def lab3_plot(func, func_lm, approx, str, N, eps, alpha, beta, x_k, y_k):
